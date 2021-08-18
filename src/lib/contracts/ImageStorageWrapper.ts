@@ -1,38 +1,46 @@
 import Web3 from 'web3';
-import * as SimpleStorageJSON from '../../../build/contracts/SimpleStorage.json';
-import { SimpleStorage } from '../../types/SimpleStorage';
+import * as ImageStorageJSON from '../../../build/contracts/ImageStorage.json';
+//import { ImageStorage } from '../../types/ImageStorage';
 
 const DEFAULT_SEND_OPTIONS = {
     gas: 6000000
 };
 
-export class SimpleStorageWrapper {
+export class ImageStorageWrapper {
     web3: Web3;
 
-    contract: SimpleStorage;
+    contract: ImageStorage;
 
     address: string;
 
     constructor(web3: Web3) {
         this.web3 = web3;
-        this.contract = new web3.eth.Contract(SimpleStorageJSON.abi as any) as any;
+        this.contract = new web3.eth.Contract(ImageStorageJSON.abi as any) as any;
     }
 
     get isDeployed() {
         return Boolean(this.address);
     }
 
-    async getStoredValue(fromAddress: string) {
-        const data = await this.contract.methods.get().call({ from: fromAddress });
+    async getImages(fromAddress: string) {
+        const count = await this.contract.methods.imageCount().call({ from: fromAddress });
+        let list = [];
 
-        return parseInt(data, 10);
+        for(let i = 1; i <= count; i++){
+            const data = await this.contract.methods.images(i).call({ from: fromAddress });
+            list.push(data);
+            console.log(data)
+        }
+        
+        return list;
     }
 
-    async setStoredValue(value: number, fromAddress: string) {
-        const tx = await this.contract.methods.set(value).send({
+    async addImageOnContract(cid: string, name: string, fromAddress: string) {
+        const tx = await this.contract.methods.addImages(cid, name).send({
             ...DEFAULT_SEND_OPTIONS,
             from: fromAddress,
-            value
+            cid,
+            name
         });
 
         return tx;
@@ -41,7 +49,7 @@ export class SimpleStorageWrapper {
     async deploy(fromAddress: string) {
         const deployTx = await (this.contract
             .deploy({
-                data: SimpleStorageJSON.bytecode,
+                data: ImageStorageJSON.bytecode,
                 arguments: []
             })
             .send({

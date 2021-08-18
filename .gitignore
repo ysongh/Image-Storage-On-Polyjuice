@@ -6,3 +6,4 @@ build
 src/types
 yarn-error.log
 yarn.lock
+apikeys.ts

@@ -8,8 +8,9 @@ import './app.scss';
 import 'react-toastify/dist/ReactToastify.css';
 import { PolyjuiceHttpProvider } from '@polyjuice-provider/web3';
 import { CONFIG } from '../config';
+import { APIKEYS } from '../apikeys';
 
-import { SimpleStorageWrapper } from '../lib/contracts/SimpleStorageWrapper';
+import { ImageStorageWrapper } from '../lib/contracts/ImageStorageWrapper';
 
 async function createWeb3() {
     // Modern dapp browsers...
@@ -39,11 +40,12 @@ async function createWeb3() {
 
 export function App() {
     const [web3, setWeb3] = useState<Web3>(null);
-    const [contract, setContract] = useState<SimpleStorageWrapper>();
+    const [contract, setContract] = useState<ImageStorage>();
     const [accounts, setAccounts] = useState<string[]>();
     const [balance, setBalance] = useState<bigint>();
+    const [image, setImage] = useState('');
     const [existingContractIdInputValue, setExistingContractIdInputValue] = useState<string>();
-    const [storedValue, setStoredValue] = useState<number | undefined>();
+    const [imageList, setImageList] = useState([]);
     const [transactionInProgress, setTransactionInProgress] = useState(false);
     const toastId = React.useRef(null);
     const [newStoredNumberInputValue, setNewStoredNumberInputValue] = useState<
@@ -74,7 +76,7 @@ export function App() {
     const account = accounts?.[0];
 
     async function deployContract() {
-        const _contract = new SimpleStorageWrapper(web3);
+        const _contract = new ImageStorageWrapper(web3);
 
         try {
             setTransactionInProgress(true);
@@ -94,27 +96,49 @@ export function App() {
         }
     }
 
-    async function getStoredValue() {
-        const value = await contract.getStoredValue(account);
-        toast('Successfully read latest stored value.', { type: 'success' });
-
-        setStoredValue(value);
+    async function callGetImages() {
+        const res = await contract.getImages(account);
+        toast('Successfully fetch images.', { type: 'success' });
+        console.log(res)
+        setImageList(res);
     }
 
+    const getFile = async event => {
+        const file = event.target.files[0];
+        console.log(file);
+        setImage(file);
+      }
+
     async function setExistingContractAddress(contractAddress: string) {
-        const _contract = new SimpleStorageWrapper(web3);
+        const _contract = new ImageStorageWrapper(web3);
         _contract.useDeployed(contractAddress.trim());
 
         setContract(_contract);
-        setStoredValue(undefined);
+        setImageList([]);
     }
 
-    async function setNewStoredValue() {
+    async function addNewImage() {
         try {
             setTransactionInProgress(true);
-            await contract.setStoredValue(newStoredNumberInputValue, account);
+
+            const url = `https://uploads.slate.host/api/public/${APIKEYS.CERTIFICATETEMPLATE_COLLECTIONID}`;
+    
+            let data = new FormData();
+            data.append("data", image);
+        
+            const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                Authorization: APIKEYS.SLATEAPIKEY,
+            },
+            body: data
+            });
+            const json = await response.json();
+            console.log(json);
+
+            await contract.addImageOnContract(json.data.cid, json.data.name, account);
             toast(
-                'Successfully set latest stored value. You can refresh the read value now manually.',
+                'Successfully added images. You can refresh the read value now manually.',
                 { type: 'success' }
             );
         } catch (error) {
@@ -159,9 +183,7 @@ export function App() {
             <br />
             <hr />
             <p>
-                The button below will deploy a SimpleStorage smart contract where you can store a
-                number value. By default the initial stored value is equal to 123 (you can change
-                that in the Solidity smart contract). After the contract is deployed you can either
+                The button below will deploy a Image Storage smart contract.  After the contract is deployed you can either
                 read stored value from smart contract or set a new one. You can do that using the
                 interface below.
             </p>
@@ -181,18 +203,25 @@ export function App() {
             </button>
             <br />
             <br />
-            <button onClick={getStoredValue} disabled={!contract}>
-                Get stored value
+            <button onClick={callGetImages} disabled={!contract}>
+                Get Images
             </button>
-            {storedValue ? <>&nbsp;&nbsp;Stored value: {storedValue.toString()}</> : null}
+            {imageList
+                && imageList.map(list => (
+                    <div className="card" style={{ width: '18rem '}}>
+                        <img src={`https://slate.textile.io/ipfs/${list.cid}`} className="card-img-top" alt="Image" />
+                        <div className="card-body">
+                            <p className="card-text">{list.name}</p>
+                        </div>
+                    </div>
+                ))}
             <br />
             <br />
-            <input
-                type="number"
-                onChange={e => setNewStoredNumberInputValue(parseInt(e.target.value, 10))}
-            />
-            <button onClick={setNewStoredValue} disabled={!contract}>
-                Set new stored value
+            <input type="file" onChange={getFile}/>
+            <br />
+            <br />
+            <button onClick={addNewImage} disabled={!image}>
+                Save
             </button>
             <br />
             <br />
