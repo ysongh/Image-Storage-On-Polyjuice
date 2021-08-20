@@ -206,15 +206,19 @@ export function App() {
             <button onClick={callGetImages} disabled={!contract}>
                 Get Images
             </button>
-            {imageList
-                && imageList.map(list => (
-                    <div className="card" style={{ width: '18rem '}}>
-                        <img src={`https://slate.textile.io/ipfs/${list.cid}`} className="card-img-top" alt="Image" />
-                        <div className="card-body">
-                            <p className="card-text">{list.name}</p>
+            <div className="row">
+                {imageList
+                    && imageList.map(list => (
+                        <div className="col-sm-12 col-md-4 col-lg-3" key={list.id}>
+                            <div className="card" style={{ width: '18rem '}}>
+                                <img src={`https://slate.textile.io/ipfs/${list.cid}`} className="card-img-top" alt="Image" />
+                                <div className="card-body">
+                                    <p className="card-text">{list.name}</p>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    ))}
+            </div>
             <br />
             <br />
             <input type="file" onChange={getFile}/>
