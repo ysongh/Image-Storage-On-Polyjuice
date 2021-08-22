@@ -4,13 +4,17 @@
 import React, { useEffect, useState } from 'react';
 import Web3 from 'web3';
 import { ToastContainer, toast } from 'react-toastify';
+import { PolyjuiceHttpProvider } from '@polyjuice-provider/web3';
+import { AddressTranslator } from 'nervos-godwoken-integration';
+
 import './app.scss';
 import 'react-toastify/dist/ReactToastify.css';
-import { PolyjuiceHttpProvider } from '@polyjuice-provider/web3';
 import { CONFIG } from '../config';
 import { APIKEYS } from '../apikeys';
-
 import { ImageStorageWrapper } from '../lib/contracts/ImageStorageWrapper';
+import * as TokenContract from '../../build/contracts/ERC20.json';
+
+const addressTranslator = new AddressTranslator();
 
 async function createWeb3() {
     // Modern dapp browsers...
@@ -42,7 +46,10 @@ export function App() {
     const [web3, setWeb3] = useState<Web3>(null);
     const [contract, setContract] = useState<ImageStorage>();
     const [accounts, setAccounts] = useState<string[]>();
+    const [depositAddress, setDepositAddress] = useState<string | undefined>();
+    const [polyjuiceAddress, setPolyjuiceAddress] = useState<string | undefined>();
     const [balance, setBalance] = useState<bigint>();
+    const [SUDTBalance, setSUDTBalance] = useState<bigint>();
     const [image, setImage] = useState('');
     const [existingContractIdInputValue, setExistingContractIdInputValue] = useState<string>();
     const [imageList, setImageList] = useState([]);
@@ -82,8 +89,18 @@ export function App() {
             setTransactionInProgress(true);
 
             await _contract.deploy(account);
-
             setExistingContractAddress(_contract.address);
+
+            const depositAddress = await addressTranslator.getLayer2DepositAddress(web3, account);
+            console.log(`Layer 2 Deposit Address on Layer 1: \n${depositAddress.addressString}`);
+            setDepositAddress(depositAddress.addressString);
+            
+            const polyjuiceAddress = addressTranslator.ethAddressToGodwokenShortAddress(account);
+            console.log(`Polyjuice Address: ${polyjuiceAddress}\n`);
+            setPolyjuiceAddress(polyjuiceAddress);
+
+            await getSUDTBalance();
+            
             toast(
                 'Successfully deployed a smart-contract. You can now proceed to get or set the value in a smart contract.',
                 { type: 'success' }
@@ -107,7 +124,20 @@ export function App() {
         const file = event.target.files[0];
         console.log(file);
         setImage(file);
-      }
+    }
+
+    async function getSUDTBalance() {
+        const contract = new web3.eth.Contract(
+            TokenContract.abi as any,
+            "0xDBe8D0970F8A6cF8d7b213b60dfEe46ebAA321d8"
+        );
+
+        const _balanceOf = await contract.methods.balanceOf(polyjuiceAddress).call({
+            from: accounts?.[0]
+        });
+        console.log('SUDTBalance', _balanceOf);
+        setSUDTBalance(_balanceOf);
+    };
 
     async function setExistingContractAddress(contractAddress: string) {
         const _contract = new ImageStorageWrapper(web3);
@@ -115,6 +145,14 @@ export function App() {
 
         setContract(_contract);
         setImageList([]);
+
+        const depositAddress = await addressTranslator.getLayer2DepositAddress(web3, account);
+        console.log(`Layer 2 Deposit Address on Layer 1: \n${depositAddress.addressString}`);
+        setDepositAddress(depositAddress.addressString);
+        
+        const polyjuiceAddress = addressTranslator.ethAddressToGodwokenShortAddress(account);
+        console.log(`Polyjuice Address: ${polyjuiceAddress}\n`);
+        setPolyjuiceAddress(polyjuiceAddress);
     }
 
     async function addNewImage() {
@@ -176,7 +214,16 @@ export function App() {
             Your ETH address: <b>{accounts?.[0]}</b>
             <br />
             <br />
+            Your Deposit address: <b> {depositAddress}</b>
+            <br />
+            <br />
+            Your Polyjuice address: <b> {polyjuiceAddress}</b>
+            <br />
+            <br />
             Balance: <b>{balance ? (balance / 10n ** 8n).toString() : <LoadingIndicator />} ETH</b>
+            <br />
+            <br />
+            SUDT Balance: <b>{SUDTBalance ? (SUDTBalance / 10 ** 18).toString() : <LoadingIndicator />} ckETH</b> <button onClick={getSUDTBalance}>Check</button>
             <br />
             <br />
             Deployed contract address: <b>{contract?.address || '-'}</b> <br />
