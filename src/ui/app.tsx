@@ -80,6 +80,23 @@ export function App() {
         }
     }, [transactionInProgress, toastId.current]);
 
+    useEffect(() => {
+        async function getSUDTBalance() {
+            const contract = new web3.eth.Contract(
+                TokenContract.abi as any,
+                "0xDBe8D0970F8A6cF8d7b213b60dfEe46ebAA321d8"
+            );
+    
+            const value = await contract.methods.balanceOf(polyjuiceAddress).call({
+                from: accounts?.[0]
+            });
+            console.log('SUDTBalance', value);
+            setSUDTBalance(value);
+        };
+
+        if(contract) getSUDTBalance();
+    }, [polyjuiceAddress])
+
     const account = accounts?.[0];
 
     async function deployContract() {
@@ -125,19 +142,6 @@ export function App() {
         console.log(file);
         setImage(file);
     }
-
-    async function getSUDTBalance() {
-        const contract = new web3.eth.Contract(
-            TokenContract.abi as any,
-            "0xDBe8D0970F8A6cF8d7b213b60dfEe46ebAA321d8"
-        );
-
-        const _balanceOf = await contract.methods.balanceOf(polyjuiceAddress).call({
-            from: accounts?.[0]
-        });
-        console.log('SUDTBalance', _balanceOf);
-        setSUDTBalance(_balanceOf);
-    };
 
     async function setExistingContractAddress(contractAddress: string) {
         const _contract = new ImageStorageWrapper(web3);
@@ -210,24 +214,17 @@ export function App() {
     const LoadingIndicator = () => <span className="rotating-icon">⚙️</span>;
 
     return (
-        <div>
-            Your ETH address: <b>{accounts?.[0]}</b>
-            <br />
-            <br />
-            Your Deposit address: <b> {depositAddress}</b>
-            <br />
-            <br />
-            Your Polyjuice address: <b> {polyjuiceAddress}</b>
-            <br />
-            <br />
-            Balance: <b>{balance ? (balance / 10n ** 8n).toString() : <LoadingIndicator />} ETH</b>
-            <br />
-            <br />
-            SUDT Balance: <b>{SUDTBalance ? (SUDTBalance / 10 ** 18).toString() : <LoadingIndicator />} ckETH</b> <button onClick={getSUDTBalance}>Check</button>
-            <br />
-            <br />
-            Deployed contract address: <b>{contract?.address || '-'}</b> <br />
-            <br />
+        <div className="container">
+            <div className="card text-dark bg-light">
+                <div className="card-body">
+                    <p>Your ETH address: <b>{accounts?.[0]}</b></p>
+                    <p>Your Polyjuice address: <b> {polyjuiceAddress || <LoadingIndicator />}</b></p>
+                    <p>Balance: <b>{balance ? (balance / 10n ** 8n).toString() : <LoadingIndicator />} ETH</b></p>
+                    <p>SUDT Balance: <b>{SUDTBalance ? (SUDTBalance / 10 ** 18).toString() : <LoadingIndicator />} ckETH</b></p>
+                </div>
+            </div>
+            <p className="text-break mt-3">Your Deposit address: <b> {depositAddress}</b></p>
+
             <hr />
             <p>
                 The button below will deploy a Image Storage smart contract.  After the contract is deployed you can either
@@ -249,6 +246,7 @@ export function App() {
                 Use existing contract
             </button>
             <br />
+            Deployed contract address: <b>{contract?.address || '-'}</b> <br />
             <br />
             <button onClick={callGetImages} disabled={!contract}>
                 Get Images
