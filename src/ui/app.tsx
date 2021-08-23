@@ -223,8 +223,13 @@ export function App() {
                     <p>SUDT Balance: <b>{SUDTBalance ? (SUDTBalance / 10 ** 18).toString() : <LoadingIndicator />} ckETH</b></p>
                 </div>
             </div>
-            <p className="text-break mt-3">Your Deposit address: <b> {depositAddress}</b></p>
-
+            <p className="text-break mt-3">Your Deposit address to use for Force Bridge: <b> {depositAddress}</b></p>
+            <a
+                target="_blank"
+                className="btn btn-info"
+                rel="noopener noreferrer"
+                href="https://force-bridge-test.ckbapp.dev/bridge/Ethereum/Nervos?xchain-asset=0x0000000000000000000000000000000000000000"
+            >Use Force Bridge</a>
             <hr />
             <p>
                 The button below will deploy a Image Storage smart contract.  After the contract is deployed you can either
@@ -259,6 +264,7 @@ export function App() {
                                 <img src={`https://slate.textile.io/ipfs/${list.cid}`} className="card-img-top" alt="Image" />
                                 <div className="card-body">
                                     <p className="card-text">{list.name}</p>
+                                    <p>{list.from}</p>
                                 </div>
                             </div>
                         </div>
