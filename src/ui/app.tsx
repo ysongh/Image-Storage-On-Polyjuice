@@ -163,7 +163,7 @@ export function App() {
         try {
             setTransactionInProgress(true);
 
-            const url = `https://uploads.slate.host/api/public/${APIKEYS.CERTIFICATETEMPLATE_COLLECTIONID}`;
+            const url = `https://uploads.slate.host/api/public`;
     
             let data = new FormData();
             data.append("data", image);
@@ -173,14 +173,14 @@ export function App() {
             headers: {
                 Authorization: APIKEYS.SLATEAPIKEY,
             },
-            body: data
+                body: data
             });
             const json = await response.json();
             console.log(json);
 
             await contract.addImageOnContract(json.data.cid, json.data.name, account);
             toast(
-                'Successfully added images. You can refresh the read value now manually.',
+                'Successfully added image.',
                 { type: 'success' }
             );
         } catch (error) {

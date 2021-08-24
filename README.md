@@ -12,8 +12,7 @@ yarn start:ganache
 - Create a file called 'apikeys.ts' on the src folder and add the following code
 ```
 export const APIKEYS = {
-    SLATEAPIKEY: "<Create API key from slate.host>",
-    CERTIFICATETEMPLATE_COLLECTIONID: "<Get Collection ID from slate.host>",
+    SLATEAPIKEY: "<Create API key from slate.host>"
 };
 ```
 
